@@ -10,7 +10,7 @@
 #include "data/sample_data.h"
 #include "../error.h"
 
-#include "store_categories.h"
+#include "store_category.h"
 
 // TODO: Choose a UUID version that will be suitable for my use cases
 // TODO: Generate UUIDs

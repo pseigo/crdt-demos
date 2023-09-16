@@ -26,7 +26,7 @@
 #include "networking/pub_sub.h"
 #include "networking/crdt.h"
 
-#include "store/store_categories.h"
+#include "store/store_category.h"
 #include "store/store_item.h"
 
 using std::cout, std::endl;

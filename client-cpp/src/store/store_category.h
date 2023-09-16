@@ -2,8 +2,8 @@
 // Created by Peyton Seigo on 2023-09-15.
 //
 
-#ifndef CRDTDEMOS_STORE_CATEGORIES_H
-#define CRDTDEMOS_STORE_CATEGORIES_H
+#ifndef CRDTDEMOS_STORE_CATEGORY_H
+#define CRDTDEMOS_STORE_CATEGORY_H
 
 #include <cassert>
 #include <string>
@@ -33,4 +33,4 @@ StoreCategory to_enum<StoreCategory>(std::string category)
     throw std::invalid_argument("invalid store category");
 }
 
-#endif //CRDTDEMOS_STORE_CATEGORIES_H
+#endif //CRDTDEMOS_STORE_CATEGORY_H
