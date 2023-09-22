@@ -11,7 +11,12 @@
 #include <string>
 #include <type_traits>
 
-//#include "crdt.h"
+
+// TODO: Implement incoming message buffer
+//   inspo: "After broadcast algorithm receives message from network, it may buffer/queue it before delivering to the application" (D.S. (2021), pg. 79/169)
+// TODO: Implement backpressure
+
+// TODO: Implement outgoing message buffer?
 
 // Inspiration: https://hexdocs.pm/phoenix_pubsub/Phoenix.PubSub.html
 class PubSub {
