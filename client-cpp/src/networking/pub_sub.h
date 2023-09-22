@@ -42,8 +42,13 @@ public:
 
         std::cout << out.str() << std::endl;
 
-        // TODO: Implement reliable broadcast
+        // Send to self
         handle_in(channel, topic, message);
+
+        // Send to others
+        for (auto& pub_sub : _others) {
+            pub_sub->handle_in(channel, topic, message);
+        }
     }
 
     void handle_in(string channel, string topic, string payload)
@@ -57,6 +62,14 @@ public:
         }
     }
 
+    void connect(PubSub& other)
+    {
+        if (&other == nullptr) {
+            throw std::invalid_argument("given PubSub is null");
+        }
+        _others.push_back(&other);
+    }
+
 private:
     struct _Handler {
         string channel;
@@ -65,6 +78,7 @@ private:
     };
 
     std::vector<_Handler> _handlers;
+    std::vector<PubSub*> _others;
 };
 
 #endif //CRDTDEMOS_PUB_SUB_H
