@@ -70,7 +70,7 @@ template <>
 class JsonCoder<StoreItem>
 {
 public:
-    std::string encode(StoreItem item) const
+    std::string encode(const StoreItem& item) const
     {
         using std::to_string;
         std::ostringstream os;
