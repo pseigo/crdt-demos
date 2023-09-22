@@ -6,6 +6,7 @@
 #define CRDTDEMOS_DATE_TIMES_H
 
 #include <chrono>
+#include <string>
 
 using SystemTimePoint = std::chrono::time_point<std::chrono::system_clock>;
 
