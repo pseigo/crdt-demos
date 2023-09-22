@@ -108,10 +108,14 @@ public:
             currency = to_enum<Currency>(data.at("currency"));
         } catch (json::type_error error) {
             using std::to_string;
-            return Result::error("type error (nlohmann::json::type_error::id = " + to_string(error.id));
+            std::ostringstream oss;
+            oss << "type error (nlohmann::json::type_error::id = " << to_string(error.id) << ")";
+            return Result::error(oss.str());
         } catch (json::out_of_range error) {
             using std::to_string;
-            return Result::error("type error (nlohmann::json::out_of_range::id = " + to_string(error.id));
+            std::ostringstream oss;
+            oss << "type error (nlohmann::json::out_of_range::id = " << to_string(error.id) << ")";
+            return Result::error(oss.str());
         } catch (std::invalid_argument error) {
             return Result::error(std::string(error.what()) + " - string does not map to any enum value");
         }
