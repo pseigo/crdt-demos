@@ -9,8 +9,8 @@ template <typename T>
 class JsonCoder
 {
 public:
-    std::string encode(T data) const;
-    T decode(std::string encoded) const;
+    std::string encode(const T& data) const;
+    T decode(const std::string& encoded) const;
 };
 
 #endif //CRDTDEMOS_JSON_CODER_H
