@@ -12,15 +12,12 @@
 #include <string>
 
 #include "pub_sub.h"
-#include "data/timestamp.h"
-
-using std::cout, std::endl;
-using std::string;
+#include "vector_clocks.h"
 
 namespace {
     template <typename Key, typename Value>
     struct State {
-        Timestamp timestamp;
+        vector_clocks::Timestamp timestamp;
         Key key;
         Value value;
 
@@ -33,14 +30,13 @@ namespace {
 template <typename Key, typename Value>
 class CRDT
 {
-public:
     using _State = State<Key, Value>;
 
+public:
     std::optional<Value> read(Key key) const
     {
         using std::cbegin, std::cend;
 
-        //if (const auto value = std::find(cbegin(_states), cend(_states), key) != cend(_states)) {
         const auto state = std::find_if(begin(_states), end(_states),
                                         [&](const auto& state){ return state.key == key; });
         if (state != end(_states)) {
@@ -50,14 +46,9 @@ public:
         return std::nullopt;
     }
 
-    /*
-    void set(Key key, Value value, PubSub& pub_sub) {
-        Timestamp timestamp = Timestamp::now("cpp_client_1");
-        pub_sub.broadcast()
-    }
-     */
+    void add(vector_clocks::Timestamp timestamp, Key key, Value value) {
+        // TODO: Should it be an invariant that `timestamp` and all previous timestamps are comparable?
 
-    void on_receive(Timestamp timestamp, Key key, Value value) {
         decltype(_states) previous;
 
         for (const auto& state : _states) {
@@ -68,7 +59,14 @@ public:
 
         using std::cbegin, std::cend;
         if (previous.empty() || std::all_of(cbegin(previous), cend(previous),
-                                            [&](const auto &state) { return state.timestamp < timestamp; })) {
+                                            [&](const auto& state) {
+                                                // Fail if any timestamp isn't comparable.
+                                                if (!vector_clocks::are_comparable(state.timestamp, timestamp)) {
+                                                    return false;
+                                                }
+                                                const auto result = state.timestamp < timestamp;
+                                                return result;
+                                            })) {
             decltype(_states) new_states;
             std::swap(_states, new_states);
 
@@ -90,27 +88,3 @@ private:
 };
 
 #endif //CRDTDEMOS_CRDT_H
-
-/*
-```
-on initialization do
-    values := {}
-end on
-
-on request to read value for key k do
-    if \exists t, v. (t, k, v) \in values then return v else return null
-end on
-
-on request to set key k to value v do
-    t := newTimestamp()  |> globally unique, e.g. Lamport timestamp
-    broadcast (set, t, k, v) by reliable broadcast (including to self)
-end on
-
-on delivering (set, t, k, v) by reliable broadcast do
-    previous := {(t', k', v') \in values | k' = k}
-    if previous = {} \or \forall (t', k', v') \in previous. t' < t then
-        values := (values \ previous) \intersection {(t, k, v)}
-    end if
-end on
-```
-*/
