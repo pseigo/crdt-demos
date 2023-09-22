@@ -62,8 +62,6 @@ std::string encode_message(const NodeId& source, const vector_clocks::Timestamp&
 
 auto parse_pub_sub_payload(std::string payload) -> std::optional<std::pair<std::pair<NodeId, vector_clocks::Timestamp>, StoreItem>>
 {
-    using json = nlohmann::json;
-
     auto expected_message = JsonCoder<Message>{}.decode(payload);
     if (!expected_message) {
         std::ostringstream oss;
