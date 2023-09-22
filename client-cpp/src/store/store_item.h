@@ -14,7 +14,7 @@
 
 // TODO: Choose a UUID version that will be suitable for my use cases
 // TODO: Generate UUIDs
-using StoreItemId = string;
+using StoreItemId = std::string;
 
 struct StoreItem {
     StoreItemId id;
