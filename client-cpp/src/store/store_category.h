@@ -20,7 +20,7 @@ std::string to_string(StoreCategory category)
     switch (category) {
         case StoreCategory::CLEANING: return "cleaning";
         case StoreCategory::COMPUTER_PERIPHERALS: return "computer_peripherals";
-        default: assert(false); // bug: non-exhaustive switch
+        default: assert(false); return "UNKNOWN"; // bug: non-exhaustive switch
     }
 }
 
