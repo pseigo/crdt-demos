@@ -5,6 +5,7 @@
 #ifndef CRDTDEMOS_CURRENCY_H
 #define CRDTDEMOS_CURRENCY_H
 
+#include <cassert>
 #include <string>
 #include <map>
 
@@ -179,6 +180,7 @@ std::string to_string(Currency currency)
         case Currency::YER: return "yer";
         case Currency::ZAR: return "zar";
         case Currency::ZMW: return "zmw";
+        default: assert(false); return "UNKNOWN"; // bug: non-exhaustive switch
     }
 }
 
