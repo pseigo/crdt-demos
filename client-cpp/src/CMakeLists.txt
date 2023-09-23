@@ -17,7 +17,7 @@ set(SOURCE_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
 #set(HEADER_FILES
-#        ${CODINGINTERVIEWS_INCLUDE_DIR}/foo.hpp)
+#        ${CRDTCLIENTCPP_INCLUDE_DIR}/foo.hpp)
 
 ###
 ### Define executable target
