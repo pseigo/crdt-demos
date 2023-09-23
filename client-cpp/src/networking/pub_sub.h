@@ -69,9 +69,6 @@ public:
 
     void connect(PubSub& other)
     {
-        if (&other == nullptr) {
-            throw std::invalid_argument("given PubSub is null");
-        }
         _others.push_back(&other);
     }
 
