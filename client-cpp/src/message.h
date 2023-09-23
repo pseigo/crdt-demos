@@ -50,17 +50,17 @@ public:
             timestamp_str = container.at("timestamp").dump();
             //timestamp_container = container.at("timestamp");
             data = container.at("data").dump();
-        } catch (json::type_error error) {
+        } catch (const json::type_error& error) {
             using std::to_string;
             std::ostringstream oss;
             oss << "type error (nlohmann::json::type_error::id = " << to_string(error.id) << ")";
             return Result::error(oss.str());
-        } catch (json::out_of_range error) {
+        } catch (const json::out_of_range& error) {
             using std::to_string;
             std::ostringstream oss;
             oss << "type error (nlohmann::json::out_of_range::id = " << to_string(error.id) << ")";
             return Result::error(oss.str());
-        } catch (std::invalid_argument error) {
+        } catch (const std::invalid_argument& error) {
             return Result::error(std::string(error.what()) + " - string does not map to any enum value");
         }
 

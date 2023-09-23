@@ -361,7 +361,7 @@ Currency to_enum<Currency>(std::string currency_code)
     static const CurrencyMap currency_map{};
     try {
         return currency_map.at(currency_code);
-    } catch (std::out_of_range) {
+    } catch (const std::out_of_range&) {
         throw std::invalid_argument("invalid currency code");
     }
 }

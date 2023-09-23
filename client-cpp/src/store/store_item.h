@@ -106,17 +106,17 @@ public:
             category = to_enum<StoreCategory>(data.at("category"));
             price = data.at("price");
             currency = to_enum<Currency>(data.at("currency"));
-        } catch (json::type_error error) {
+        } catch (const json::type_error& error) {
             using std::to_string;
             std::ostringstream oss;
             oss << "type error (nlohmann::json::type_error::id = " << to_string(error.id) << ")";
             return Result::error(oss.str());
-        } catch (json::out_of_range error) {
+        } catch (const json::out_of_range& error) {
             using std::to_string;
             std::ostringstream oss;
             oss << "type error (nlohmann::json::out_of_range::id = " << to_string(error.id) << ")";
             return Result::error(oss.str());
-        } catch (std::invalid_argument error) {
+        } catch (const std::invalid_argument& error) {
             return Result::error(std::string(error.what()) + " - string does not map to any enum value");
         }
 
@@ -129,13 +129,13 @@ public:
         /*
         try {
             id = data.at("id");
-        } catch (json::type_error error) {
+        } catch (const json::type_error& error) {
             if (error.id == 304) { // Not an object
 
             } else {
 
             }
-        } catch (json::out_of_range error) {
+        } catch (const json::out_of_range& error) {
             if (error.id == 403) { // key is not stored in object
 
             } else {

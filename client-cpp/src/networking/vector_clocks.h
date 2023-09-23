@@ -97,7 +97,7 @@ namespace vector_clocks {
                 } else if (right_count > left_count) {
                     right_has_a_greater_value = true;
                 }
-            } catch (std::out_of_range) {
+            } catch (const std::out_of_range&) {
                 return false;
             }
         }
@@ -257,17 +257,17 @@ public:
             try {
                 node_id = node_container.at("node_id");
                 count = node_container.at("count");
-            } catch (json::type_error error) {
+            } catch (const json::type_error& error) {
                 using std::to_string;
                 std::ostringstream oss;
                 oss << "type error (nlohmann::json::type_error::id = " << to_string(error.id) << ")";
                 return Result::error(oss.str());
-            } catch (json::out_of_range error) {
+            } catch (const json::out_of_range& error) {
                 using std::to_string;
                 std::ostringstream oss;
                 oss << "type error (nlohmann::json::out_of_range::id = " << to_string(error.id) << ")";
                 return Result::error(oss.str());
-            } catch (std::invalid_argument error) {
+            } catch (const std::invalid_argument& error) {
                 return Result::error(std::string(error.what()) + " - string does not map to any enum value");
             }
 
