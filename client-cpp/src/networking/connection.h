@@ -5,8 +5,12 @@
 #ifndef CRDTDEMOS_CONNECTION_H
 #define CRDTDEMOS_CONNECTION_H
 
-#include <string>
 #include <chrono>
+#include <ostream>
+#include <string>
+#include <variant>
+
+#include "../functional/overloaded.h"
 
 class Connection
 {
