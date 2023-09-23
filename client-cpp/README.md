@@ -97,3 +97,10 @@ Up to date as of commit `3ac73bfcb3afcb682fe4ba640a009ac72c5a8a26` (2023-09-22).
 [info][node_2] current value of '987C30DB-A335-40F0-8694-0921EAB9406F' is: `{"id": "987C30DB-A335-40F0-8694-0921EAB9406F", "name": "Supernanofiber Cloth", "category": "cleaning", "price": 319.600000, "currency": "cad"}`
 ```
 
+## License
+
+Copyright (c) 2023 Peyton Seigo.
+
+- Otherwise, code belonging to other copyright holders should be cited in the same file.
+- Third party dependencies are in the `third_party` directory and their licenses are in the `licenses` directory.
+
