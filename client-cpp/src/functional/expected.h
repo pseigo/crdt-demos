@@ -5,7 +5,12 @@
 #ifndef CRDTDEMOS_EXPECTED_H
 #define CRDTDEMOS_EXPECTED_H
 
+#include <iostream>
+#include <optional>
 #include <string>
+#include <stdexcept>
+#include <utility>
+#include <variant>
 
 template <typename T, typename E>
 class Expected
