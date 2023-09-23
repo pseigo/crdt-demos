@@ -381,7 +381,7 @@ void configure()
         std::cout << "[info] connection status: " << connection << std::endl;
     };
 
-    //print_status(connection);
+    print_status(connection);
 
     connection.connect();
 
