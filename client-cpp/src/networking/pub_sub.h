@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -22,25 +23,27 @@
 // Inspiration: https://hexdocs.pm/phoenix_pubsub/Phoenix.PubSub.html
 class PubSub {
 private:
-    using string = std::string;
-
 public:
-    using Callback = std::function<void(string)>;
+    using Callback = std::function<void(std::string)>;
 
-    void add_handler(string channel, string topic, Callback callback)
+    void add_handler(std::string channel, std::string topic, Callback callback)
     {
-        _handlers.push_back({ channel, topic, std::move(callback) });
+        _handlers.push_back({
+            std::move(channel),
+            std::move(topic),
+            std::move(callback)
+        });
     }
 
     template <typename T>
-    void broadcast(string channel, string topic, T message)
+    void broadcast(const std::string_view channel, const std::string_view topic, T message)
     {
         using std::to_string;
 
         std::ostringstream out;
         out << "[info] Broadcasting to '" << channel << ":" << topic << "': ";
 
-        if constexpr (std::is_same<T, string>()) {
+        if constexpr (std::is_same<T, std::string>()) {
             out << message;
         } else {
             out << to_string(message);
@@ -57,12 +60,12 @@ public:
         }
     }
 
-    void handle_in(string channel, string topic, string payload)
+    void handle_in(const std::string_view channel, const std::string_view topic, std::string raw_message)
     {
         for (auto& handler: _handlers) {
             if (handler.channel == channel && (handler.topic == topic || handler.topic == "*")) {
                 if (handler.callback) {
-                    handler.callback(payload);
+                    handler.callback(std::move(raw_message));
                 }
             }
         }
@@ -75,8 +78,8 @@ public:
 
 private:
     struct _Handler {
-        string channel;
-        string topic;
+        std::string channel;
+        std::string topic;
         Callback callback;
     };
 
