@@ -327,7 +327,12 @@ void three_nodes()
 
 int main()
 {
-    //two_nodes();
+    std::cout << "=====================[ Demo: Two Nodes ]=====================\n\n" << std::flush;
+    two_nodes();
+
+    std::cout << "\n\n" << std::flush;
+
+    std::cout << "=====================[ Demo: Three Nodes ]=====================\n\n" << std::flush;
     three_nodes();
 }
 
