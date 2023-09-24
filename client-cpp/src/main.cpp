@@ -43,18 +43,27 @@ struct Node
     }
 };
 
+// ==============[ Inter-node messages ]==============
 std::string encode_message(const NodeId& source, const vector_clocks::Timestamp& timestamp, const std::string& payload)
 {
     Message message;
     message.source = source;
-    message.data = payload;
     message.timestamp = timestamp;
+    message.data = payload;
     const auto encoded_message = JsonCoder<Message>{}.encode(message);
     return encoded_message;
 };
 
-auto parse_pub_sub_payload(std::string payload) -> std::optional<std::pair<std::pair<NodeId, vector_clocks::Timestamp>, StoreItem>>
+struct PubSubMessage
 {
+    NodeId source;
+    vector_clocks::Timestamp timestamp;
+    StoreItem store_item;
+};
+
+std::optional<PubSubMessage> decode_pub_sub_message(std::string payload)
+{
+    // Decode raw payload
     auto expected_message = JsonCoder<Message>{}.decode(payload);
     if (!expected_message) {
         std::ostringstream oss;
@@ -65,6 +74,7 @@ auto parse_pub_sub_payload(std::string payload) -> std::optional<std::pair<std::
     }
     const Message message = expected_message.get();
 
+    // Decode StoreItem from payload's data field
     auto expected_store_item = JsonCoder<StoreItem>{}.decode(message.data);
     if (!expected_store_item) {
         std::ostringstream oss;
@@ -75,9 +85,40 @@ auto parse_pub_sub_payload(std::string payload) -> std::optional<std::pair<std::
     }
     const StoreItem store_item = expected_store_item.get();
 
-    using std::make_pair;
-    return make_pair(make_pair(message.source, message.timestamp), store_item);
+    return std::optional(PubSubMessage{
+        std::move(message.source),
+        std::move(message.timestamp),
+        std::move(store_item)
+    });
 };
+
+void process_message(Node& node, string raw_message)
+{
+    // Decode message
+    auto expected_pub_sub_message = decode_pub_sub_message(raw_message);
+    if (!expected_pub_sub_message.has_value()) {
+        throw std::runtime_error("failed to decode PubSub message");
+    }
+    auto message = expected_pub_sub_message.value();
+
+    // Update node's timestamp
+    vector_clocks::merge(node.timestamp, message.timestamp);
+
+    // Increment node's event count if the message came from another node
+    if (message.source != node.id) {
+        vector_clocks::increment(node.timestamp, node.id);
+    }
+
+    // Update node's StoreItem CRDT
+    const auto id = message.store_item.id;
+    node.store_items.add(node.timestamp, id, std::move(message.store_item));
+
+    // Log success
+    std::ostringstream oss;
+    oss << "[info][" << node.id << "] processed message and updated StoreItem CRDT\n";
+    std::cout << oss.str() << std::flush;
+}
+// ==============[ END: Inter-node messages ]==============
 
 StoreItem read_and_print_store_item(const Node& node, const StoreItemId& store_item_id, const JsonCoder<StoreItem>& coder)
 {
@@ -116,38 +157,8 @@ void two_nodes()
     node_1.pub_sub.connect(node_2.pub_sub);
     node_2.pub_sub.connect(node_1.pub_sub);
 
-    node_1.pub_sub.add_handler(channel, topic, [&](string payload) {
-        auto expected_pair = parse_pub_sub_payload(payload);
-        if (!expected_pair.has_value()) {
-            return;
-        }
-        auto [source_timestamp_pair, store_item] = expected_pair.value();
-        auto [source, timestamp] = source_timestamp_pair;
-
-        vector_clocks::merge(node_1.timestamp, timestamp);
-        if (source != node_1.id) {
-            vector_clocks::increment(node_1.timestamp, node_1.id);
-        }
-
-        const auto id = store_item.id;
-        node_1.store_items.add(node_1.timestamp, id, std::move(store_item));
-    });
-    node_2.pub_sub.add_handler(channel, topic, [&](string payload) {
-        auto expected_pair = parse_pub_sub_payload(payload);
-        if (!expected_pair.has_value()) {
-            return;
-        }
-        auto [source_timestamp_pair, store_item] = expected_pair.value();
-        auto [source, timestamp] = source_timestamp_pair;
-
-        vector_clocks::merge(node_2.timestamp, timestamp);
-        if (source != node_2.id) {
-            vector_clocks::increment(node_2.timestamp, node_2.id);
-        }
-
-        const auto id = store_item.id;
-        node_2.store_items.add(node_2.timestamp, id, std::move(store_item));
-    });
+    node_1.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_1, raw_message); });
+    node_2.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_2, raw_message); });
 
     // Serialization
     const auto store_item_coder = JsonCoder<StoreItem>();
@@ -231,54 +242,9 @@ void three_nodes()
     node_3.pub_sub.connect(node_1.pub_sub);
     node_3.pub_sub.connect(node_2.pub_sub);
 
-    node_1.pub_sub.add_handler(channel, topic, [&](string payload) {
-        auto expected_pair = parse_pub_sub_payload(payload);
-        if (!expected_pair.has_value()) {
-            return;
-        }
-        auto [source_timestamp_pair, store_item] = expected_pair.value();
-        auto [source, timestamp] = source_timestamp_pair;
-
-        vector_clocks::merge(node_1.timestamp, timestamp);
-        if (source != node_1.id) {
-            vector_clocks::increment(node_1.timestamp, node_1.id);
-        }
-
-        const auto id = store_item.id;
-        node_1.store_items.add(node_1.timestamp, id, std::move(store_item));
-    });
-    node_2.pub_sub.add_handler(channel, topic, [&](string payload) {
-        auto expected_pair = parse_pub_sub_payload(payload);
-        if (!expected_pair.has_value()) {
-            return;
-        }
-        auto [source_timestamp_pair, store_item] = expected_pair.value();
-        auto [source, timestamp] = source_timestamp_pair;
-
-        vector_clocks::merge(node_2.timestamp, timestamp);
-        if (source != node_2.id) {
-            vector_clocks::increment(node_2.timestamp, node_2.id);
-        }
-
-        const auto id = store_item.id;
-        node_2.store_items.add(node_2.timestamp, id, std::move(store_item));
-    });
-    node_3.pub_sub.add_handler(channel, topic, [&](string payload) {
-        auto expected_pair = parse_pub_sub_payload(payload);
-        if (!expected_pair.has_value()) {
-            return;
-        }
-        auto [source_timestamp_pair, store_item] = expected_pair.value();
-        auto [source, timestamp] = source_timestamp_pair;
-
-        vector_clocks::merge(node_3.timestamp, timestamp);
-        if (source != node_3.id) {
-            vector_clocks::increment(node_3.timestamp, node_3.id);
-        }
-
-        const auto id = store_item.id;
-        node_3.store_items.add(node_3.timestamp, id, std::move(store_item));
-    });
+    node_1.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_1, raw_message); });
+    node_2.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_2, raw_message); });
+    node_3.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_3, raw_message); });
 
     // Serialization
     const auto store_item_coder = JsonCoder<StoreItem>();
