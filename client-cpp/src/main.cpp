@@ -76,10 +76,10 @@ struct PubSubMessage
     StoreItem store_item;
 };
 
-std::optional<PubSubMessage> decode_pub_sub_message(std::string payload)
+std::optional<PubSubMessage> decode_pub_sub_message(std::string raw_message)
 {
     // Decode raw payload
-    auto expected_message = JsonCoder<Message>{}.decode(payload);
+    auto expected_message = JsonCoder<Message>{}.decode(std::move(raw_message));
     if (!expected_message) {
         std::ostringstream oss;
         const auto error = expected_message.error();
@@ -110,7 +110,7 @@ std::optional<PubSubMessage> decode_pub_sub_message(std::string payload)
 void process_message(Node& node, string raw_message)
 {
     // Decode message
-    auto expected_pub_sub_message = decode_pub_sub_message(raw_message);
+    auto expected_pub_sub_message = decode_pub_sub_message(std::move(raw_message));
     if (!expected_pub_sub_message.has_value()) {
         throw std::runtime_error("failed to decode PubSub message");
     }
@@ -155,6 +155,7 @@ StoreItem read_and_print_store_item(const Node& node, const StoreItemId& store_i
     return store_item;
 }
 
+// ==============[ Demos ]==============
 void two_nodes()
 {
     std::vector<NodeId> node_ids = {"node_1", "node_2"};
@@ -172,8 +173,8 @@ void two_nodes()
     node_1.pub_sub.connect(node_2.pub_sub);
     node_2.pub_sub.connect(node_1.pub_sub);
 
-    node_1.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_1, raw_message); });
-    node_2.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_2, raw_message); });
+    node_1.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_1, std::move(raw_message)); });
+    node_2.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_2, std::move(raw_message)); });
 
     // Serialization
     const auto store_item_coder = JsonCoder<StoreItem>();
@@ -188,22 +189,21 @@ void two_nodes()
 
     read_and_print_store_item(node_1, store_item_id, store_item_coder);
 
-
-    { // node 1 broadcasts message 1
+    { // node 1 broadcasts this StoreItem for the first time
         const auto maybe_store_item = node_1.store_items.read(store_item_id);
         if (!maybe_store_item) {
             throw std::runtime_error("expected to read store item after it was added");
         }
         const auto store_item = maybe_store_item.value();
 
-        broadcast_change(node_1, store_item, store_item_coder, channel, topic);
+        broadcast_change(node_1, std::move(store_item), store_item_coder, channel, topic);
     }
 
     { // node 2 makes a change
         auto store_item = read_and_print_store_item(node_2, store_item_id, store_item_coder);
         store_item.price *= 2;
 
-        broadcast_change(node_2, store_item, store_item_coder, channel, topic);
+        broadcast_change(node_2, std::move(store_item), store_item_coder, channel, topic);
     }
 
     read_and_print_store_item(node_2, store_item_id, store_item_coder);
@@ -213,7 +213,7 @@ void two_nodes()
         store_item.name = "Nanofiber Cloth";
         store_item.price *= 2;
 
-        broadcast_change(node_1, store_item, store_item_coder, channel, topic);
+        broadcast_change(node_1, std::move(store_item), store_item_coder, channel, topic);
     }
 
     read_and_print_store_item(node_1, store_item_id, store_item_coder);
@@ -243,9 +243,9 @@ void three_nodes()
     node_3.pub_sub.connect(node_1.pub_sub);
     node_3.pub_sub.connect(node_2.pub_sub);
 
-    node_1.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_1, raw_message); });
-    node_2.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_2, raw_message); });
-    node_3.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_3, raw_message); });
+    node_1.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_1, std::move(raw_message)); });
+    node_2.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_2, std::move(raw_message)); });
+    node_3.pub_sub.add_handler(channel, topic, [&](string raw_message) { process_message(node_3, std::move(raw_message)); });
 
     // Serialization
     const auto store_item_coder = JsonCoder<StoreItem>();
@@ -267,7 +267,7 @@ void three_nodes()
         }
         const auto store_item = maybe_store_item.value();
 
-        broadcast_change(node_1, store_item, store_item_coder, channel, topic);
+        broadcast_change(node_1, std::move(store_item), store_item_coder, channel, topic);
     }
 
     read_and_print_store_item(node_3, store_item_id, store_item_coder);
@@ -276,30 +276,28 @@ void three_nodes()
         auto store_item = read_and_print_store_item(node_2, store_item_id, store_item_coder);
         store_item.price *= 2;
 
-        broadcast_change(node_2, store_item, store_item_coder, channel, topic);
+        broadcast_change(node_2, std::move(store_item), store_item_coder, channel, topic);
     }
 
     read_and_print_store_item(node_2, store_item_id, store_item_coder);
 
-    // node 1 makes a change
-    {
+    { // node 1 makes a change
         auto store_item = read_and_print_store_item(node_1, store_item_id, store_item_coder);
         store_item.name = "Nanofiber Cloth";
         store_item.price *= 2;
 
-        broadcast_change(node_1, store_item, store_item_coder, channel, topic);
+        broadcast_change(node_1, std::move(store_item), store_item_coder, channel, topic);
     }
 
     read_and_print_store_item(node_1, store_item_id, store_item_coder);
     read_and_print_store_item(node_2, store_item_id, store_item_coder);
 
-    // node 3 makes a change
-    {
+    { // node 3 makes a change
         auto store_item = read_and_print_store_item(node_3, store_item_id, store_item_coder);
         store_item.name = "Supernanofiber Cloth";
         store_item.price *= 10;
 
-        broadcast_change(node_3, store_item, store_item_coder, channel, topic);
+        broadcast_change(node_3, std::move(store_item), store_item_coder, channel, topic);
     }
 
     read_and_print_store_item(node_1, store_item_id, store_item_coder);
@@ -317,6 +315,7 @@ int main()
     std::cout << "=====================[ Demo: Three Nodes ]=====================\n\n" << std::flush;
     three_nodes();
 }
+// ==============[ END: Demos ]==============
 
 void configure()
 {
