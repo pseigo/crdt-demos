@@ -22,7 +22,12 @@ namespace {
         Key key;
         Value value;
 
-        State() = default;
+        State(vector_clocks::Timestamp timestamp, Key key, Value value) :
+            timestamp{std::move(timestamp)},
+            key{std::move(key)},
+            value{std::move(value)}
+        {}
+
         State(const State& other) = default;
         State& operator=(const State& other) = default;
     };
