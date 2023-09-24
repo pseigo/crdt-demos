@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <string_view>
 #include <thread>
 #include <utility>
 
@@ -53,6 +54,20 @@ std::string encode_message(const NodeId& source, const vector_clocks::Timestamp&
     const auto encoded_message = JsonCoder<Message>{}.encode(message);
     return encoded_message;
 };
+
+void broadcast_change(Node& source_node,
+                      StoreItem store_item,
+                      const JsonCoder<StoreItem>& coder,
+                      const std::string_view channel,
+                      const std::string_view topic)
+{
+    // ASSUME: Synchronous timing, reliable broadcast; it's fine to mutate the node's state, don't need to 'undo' if it can't fail
+    vector_clocks::before_send(source_node.id, source_node.timestamp);
+
+    const auto encoded_store_item = coder.encode(store_item);
+    const auto encoded_message = encode_message(source_node.id, source_node.timestamp, encoded_store_item);
+    source_node.pub_sub.broadcast(channel, topic, encoded_message);
+}
 
 struct PubSubMessage
 {
@@ -173,46 +188,32 @@ void two_nodes()
 
     read_and_print_store_item(node_1, store_item_id, store_item_coder);
 
-    // node 1 broadcasts message 1
-    {
+
+    { // node 1 broadcasts message 1
         const auto maybe_store_item = node_1.store_items.read(store_item_id);
         if (!maybe_store_item) {
             throw std::runtime_error("expected to read store item after it was added");
         }
         const auto store_item = maybe_store_item.value();
 
-        vector_clocks::before_send(node_1.id, node_1.timestamp);
-
-        const auto encoded_store_item = store_item_coder.encode(store_item);
-        const auto encoded_message = encode_message(node_1.id, node_1.timestamp, encoded_store_item);
-        node_1.pub_sub.broadcast(channel, topic, encoded_message);
+        broadcast_change(node_1, store_item, store_item_coder, channel, topic);
     }
 
-    // node 2 makes a change
-    {
+    { // node 2 makes a change
         auto store_item = read_and_print_store_item(node_2, store_item_id, store_item_coder);
         store_item.price *= 2;
 
-        vector_clocks::before_send(node_2.id, node_2.timestamp);
-
-        const auto encoded_store_item = store_item_coder.encode(store_item);
-        const auto encoded_message = encode_message(node_2.id, node_2.timestamp, encoded_store_item);
-        node_2.pub_sub.broadcast(channel, topic, encoded_message);
+        broadcast_change(node_2, store_item, store_item_coder, channel, topic);
     }
 
     read_and_print_store_item(node_2, store_item_id, store_item_coder);
 
-    // node 1 makes a change
-    {
+    { // node 1 makes a change
         auto store_item = read_and_print_store_item(node_1, store_item_id, store_item_coder);
         store_item.name = "Nanofiber Cloth";
         store_item.price *= 2;
 
-        vector_clocks::before_send(node_1.id, node_1.timestamp);
-
-        const auto encoded_store_item = store_item_coder.encode(store_item);
-        const auto encoded_message = encode_message(node_1.id, node_1.timestamp, encoded_store_item);
-        node_1.pub_sub.broadcast(channel, topic, encoded_message);
+        broadcast_change(node_1, store_item, store_item_coder, channel, topic);
     }
 
     read_and_print_store_item(node_1, store_item_id, store_item_coder);
@@ -259,34 +260,23 @@ void three_nodes()
 
     read_and_print_store_item(node_1, store_item_id, store_item_coder);
 
-    // node 1 broadcasts message 1
-    {
+    { // node 1 broadcasts this StoreItem for the first time
         const auto maybe_store_item = node_1.store_items.read(store_item_id);
         if (!maybe_store_item) {
             throw std::runtime_error("expected to read store item after it was added");
         }
         const auto store_item = maybe_store_item.value();
 
-        vector_clocks::before_send(node_1.id, node_1.timestamp);
-
-        const auto encoded_store_item = store_item_coder.encode(store_item);
-        const auto encoded_message = encode_message(node_1.id, node_1.timestamp, encoded_store_item);
-        node_1.pub_sub.broadcast(channel, topic, encoded_message);
+        broadcast_change(node_1, store_item, store_item_coder, channel, topic);
     }
 
-    // node 2 makes a change
-    {
+    read_and_print_store_item(node_3, store_item_id, store_item_coder);
+
+    { // node 2 makes a change
         auto store_item = read_and_print_store_item(node_2, store_item_id, store_item_coder);
         store_item.price *= 2;
 
-        // (print node 3's value as well)
-        read_and_print_store_item(node_3, store_item_id, store_item_coder);
-
-        vector_clocks::before_send(node_2.id, node_2.timestamp);
-
-        const auto encoded_store_item = store_item_coder.encode(store_item);
-        const auto encoded_message = encode_message(node_2.id, node_2.timestamp, encoded_store_item);
-        node_2.pub_sub.broadcast(channel, topic, encoded_message);
+        broadcast_change(node_2, store_item, store_item_coder, channel, topic);
     }
 
     read_and_print_store_item(node_2, store_item_id, store_item_coder);
@@ -297,11 +287,7 @@ void three_nodes()
         store_item.name = "Nanofiber Cloth";
         store_item.price *= 2;
 
-        vector_clocks::before_send(node_1.id, node_1.timestamp);
-
-        const auto encoded_store_item = store_item_coder.encode(store_item);
-        const auto encoded_message = encode_message(node_1.id, node_1.timestamp, encoded_store_item);
-        node_1.pub_sub.broadcast(channel, topic, encoded_message);
+        broadcast_change(node_1, store_item, store_item_coder, channel, topic);
     }
 
     read_and_print_store_item(node_1, store_item_id, store_item_coder);
@@ -313,11 +299,7 @@ void three_nodes()
         store_item.name = "Supernanofiber Cloth";
         store_item.price *= 10;
 
-        vector_clocks::before_send(node_3.id, node_3.timestamp);
-
-        const auto encoded_store_item = store_item_coder.encode(store_item);
-        const auto encoded_message = encode_message(node_3.id, node_3.timestamp, encoded_store_item);
-        node_3.pub_sub.broadcast(channel, topic, encoded_message);
+        broadcast_change(node_3, store_item, store_item_coder, channel, topic);
     }
 
     read_and_print_store_item(node_1, store_item_id, store_item_coder);
