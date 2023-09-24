@@ -100,11 +100,11 @@ std::optional<PubSubMessage> decode_pub_sub_message(std::string raw_message)
     }
     const StoreItem store_item = expected_store_item.get();
 
-    return std::optional(PubSubMessage{
+    return PubSubMessage{
         std::move(message.source),
         std::move(message.timestamp),
         std::move(store_item)
-    });
+    };
 };
 
 void process_message(Node& node, string raw_message)
