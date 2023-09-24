@@ -41,13 +41,6 @@ struct Node
     {
         vector_clocks::init_new_nodes(timestamp, node_ids);
     }
-
-    /*
-    void receive(const Message& message)
-    {
-        vector_clocks::on_receive(id, timestamp, message.timestamp);
-    }
-     */
 };
 
 std::string encode_message(const NodeId& source, const vector_clocks::Timestamp& timestamp, const std::string& payload)
