@@ -53,8 +53,6 @@ public:
     }
 
     void add(vector_clocks::Timestamp timestamp, Key key, Value value) {
-        // TODO: Should it be an invariant that `timestamp` and all previous timestamps are comparable?
-
         decltype(_states) previous;
 
         for (const auto& state : _states) {
@@ -65,14 +63,17 @@ public:
 
         using std::cbegin, std::cend;
         if (previous.empty() || std::all_of(cbegin(previous), cend(previous),
-                                            [&](const auto& state) {
-                                                // Fail if any timestamp isn't comparable.
+                                            [&](const auto& state)
+                                            {
+                                                // TODO: Should it be an invariant that `timestamp` and all previous timestamps are comparable?
+                                                // Discard this `add` call if there exists an incomparable timestamp.
                                                 if (!vector_clocks::are_comparable(state.timestamp, timestamp)) {
                                                     return false;
                                                 }
                                                 const auto result = state.timestamp < timestamp;
                                                 return result;
                                             })) {
+
             decltype(_states) new_states;
             std::swap(_states, new_states);
 
