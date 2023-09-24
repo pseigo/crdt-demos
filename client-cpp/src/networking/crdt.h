@@ -10,6 +10,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "pub_sub.h"
 #include "vector_clocks.h"
