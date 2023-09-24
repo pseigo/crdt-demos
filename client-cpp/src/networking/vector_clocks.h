@@ -29,13 +29,6 @@ namespace vector_clocks {
         }
     }
 
-    void before_send(const NodeId& node_id, Timestamp& timestamp)
-    {
-        timestamp.counts.at(node_id)++;
-
-        // TODO: send `(timestmap, message)` via network (don't do it here; not a concern of `vector_clocks`)
-    }
-
     /**
      * Merges `message_timestamp` into `local_timestamp` by element-wise maximum.
      */
@@ -57,12 +50,6 @@ namespace vector_clocks {
         }
     }
 
-    void on_receive(const NodeId& local_node_id, Timestamp& local_timestamp, const Timestamp& message_timestamp)
-    {
-        merge(local_timestamp, message_timestamp);
-        local_timestamp.counts.at(local_node_id)++;
-    }
-
     /**
      * Increments event count for `node_id`.
      * @throws std::out_of_range If `node_id` is not in `timestamp`.
@@ -70,6 +57,17 @@ namespace vector_clocks {
     void increment(Timestamp& timestamp, const NodeId& node_id)
     {
         timestamp.counts.at(node_id)++;
+    }
+
+    void before_send(const NodeId& node_id, Timestamp& timestamp)
+    {
+        increment(timestamp, node_id);
+    }
+
+    void on_receive(const NodeId& local_node_id, Timestamp& local_timestamp, const Timestamp& message_timestamp)
+    {
+        merge(local_timestamp, message_timestamp);
+        increment(local_timestamp, local_node_id);
     }
 
     // TODO: measure performance of vector timestamp comparison and make them faster if needed
@@ -210,9 +208,7 @@ bool operator||(const vector_clocks::Timestamp& left, const vector_clocks::Times
 }
   */
 
-
 #include "../../third_party/nlohmann/json.hpp"
-
 #include "../functional/expected.h"
 
 template<>
