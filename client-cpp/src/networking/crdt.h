@@ -73,20 +73,14 @@ public:
                                                 const auto result = state.timestamp < timestamp;
                                                 return result;
                                             })) {
-
-            decltype(_states) new_states;
-            std::swap(_states, new_states);
-
             // Remove all previous states for `key`
             using std::begin, std::end;
-            new_states.erase(std::remove_if(begin(new_states), end(new_states),
-                                            [&](const _State &state) { return state.key == key; }),
-                             end(new_states));
+            _states.erase(std::remove_if(begin(_states), end(_states),
+                                         [&](const _State& state) { return state.key == key; }),
+                          end(_states));
 
             // Put new state
-            new_states.push_back({timestamp, key, value});
-
-            std::swap(_states, new_states);
+            _states.push_back({timestamp, key, value});
         }
     }
 
