@@ -33,7 +33,7 @@ struct Node
 {
     NodeId id;
     PubSub pub_sub;
-    CRDT<std::string, StoreItem> store_items;
+    CRDT<StoreItemId, StoreItem> store_items;
     vector_clocks::Timestamp timestamp;
 
     explicit Node(NodeId id) : id{std::move(id)} {}
@@ -110,11 +110,11 @@ std::optional<PubSubMessage> decode_pub_sub_message(std::string raw_message)
 void process_message(Node& node, string raw_message)
 {
     // Decode message
-    auto expected_pub_sub_message = decode_pub_sub_message(std::move(raw_message));
-    if (!expected_pub_sub_message.has_value()) {
+    auto expected_message = decode_pub_sub_message(std::move(raw_message));
+    if (!expected_message.has_value()) {
         throw std::runtime_error("failed to decode PubSub message");
     }
-    auto message = expected_pub_sub_message.value();
+    PubSubMessage message = expected_message.value();
 
     // Update node's timestamp
     vector_clocks::merge(node.timestamp, message.timestamp);
@@ -137,19 +137,19 @@ void process_message(Node& node, string raw_message)
 
 StoreItem read_and_print_store_item(const Node& node, const StoreItemId& store_item_id, const JsonCoder<StoreItem>& coder)
 {
+    // Get StoreItem from the CRDT
     const auto expected_store_item = node.store_items.read(store_item_id);
     if (!expected_store_item.has_value()) {
         std::ostringstream oss;
         oss << "expected to read store item. store_item_id = '" << store_item_id << "'; node_id: '" << node.id << "'";
         throw std::runtime_error(oss.str());
     }
-    const auto& store_item = expected_store_item.value();
+    const StoreItem& store_item = expected_store_item.value();
 
-    using std::to_string;
+    // Print as JSON
     const auto encoded_store_item = coder.encode(store_item);
     std::ostringstream oss;
     oss << "[info][" << node.id << "] current value of '" << store_item.id << "' is: `" << encoded_store_item << "`";
-
     std::cout << oss.str() << std::endl;
 
     return store_item;
