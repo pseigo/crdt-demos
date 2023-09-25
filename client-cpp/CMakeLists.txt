@@ -23,6 +23,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
   set(CMAKE_CXX_EXTENSIONS OFF) # Ensure -std=c++xx instead of -std=g++xx
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate `compile_commands.json`
 
   # Support folders in IDEs
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
